@@ -11,10 +11,10 @@ public class ReporteController {
     }
 
     public void enviarReporte(Reporte reporte, String destinatario) {
-        if (estrategia == null) {
+        if (estrategia != null) {
+            estrategia.enviar(reporte, destinatario);
+        } else {
             System.out.println("[ERROR] No se definió una estrategia de envío.");
-            return;
         }
-        estrategia.enviar(reporte, destinatario);
     }
 }
