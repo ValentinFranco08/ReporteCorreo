@@ -1,119 +1,78 @@
-# 📄 Proyecto: Generador y Envío de Reportes (con Strategy)
+# 📄 Proyecto: ReporteCorreo (Ejemplo de Violación al SRP)
 
-Este proyecto en **Java** muestra cómo generar un reporte a partir de un texto, guardarlo en un archivo y enviarlo mediante una estrategia de envío. Actualmente incluye solo la estrategia de **correo electrónico (simulada en consola)**, pero gracias al patrón **Strategy** es muy fácil extenderlo.
-
----
-
-## 📂 Estructura del proyecto
-
-```
-src/
- ├─ Main.java                      # Punto de entrada de la aplicación
- ├─ controller/
- │    └─ ReporteController.java    # Coordina el modelo y la estrategia de envío
- ├─ models/
- │    ├─ Reporte.java              # Representa el reporte y lo guarda en archivo
- │    ├─ IMetodoEnvioStrategy.java # Interfaz para las estrategias de envío
- │    └─ EnvioCorreo.java          # Estrategia concreta: envío por correo (simulado)
- └─ view/
-      └─ VistaReporte.java         # Vista que orquesta la generación y envío
-```
+Este documento muestra un **ejemplo inicial de una clase `Reporte` que viola el Principio de Responsabilidad Única (SRP)** de SOLID. Está comentado para ilustrar los problemas de diseño y los múltiples motivos de cambio que acumula.
 
 ---
 
-## 🧩 Componentes
+## 🚨 Clase que viola el SRP
 
-* **Main.java** → arranca el programa.
-* **controller/ReporteController.java** → recibe la estrategia de envío y coordina el proceso.
-* **models/Reporte.java** → modelo del reporte, genera el archivo.
-* **models/IMetodoEnvioStrategy.java** → interfaz que define cómo debe ser una estrategia de envío.
-* **models/EnvioCorreo.java** → implementación concreta para enviar por correo.
-* **view/VistaReporte.java** → vista que crea el reporte, define la estrategia y la ejecuta.
+```java
+package models;
 
----
+import java.io.FileWriter;
 
-## 📐 Diagrama UML (ASCII)
+public class Reporte {
+    public void generarYEnviar() {
+        // 🚨 Responsabilidad 1: Obtener datos
+        String datos = "Este es un reporte de prueba";
 
-```
-+------------------+
-|     Reporte      |
-+------------------+
-| - contenido      |
-| - archivo        |
-+------------------+
-| +generar()       |
-| +getArchivo()    |
-+------------------+
+        // 🚨 Responsabilidad 2: Generar contenido
+        String contenido = "===== REPORTE =====\n" + datos;
 
-+---------------------------+
-| IMetodoEnvioStrategy      |<<interface>>
-+---------------------------+
-| +enviar(Reporte,String)   |
-+---------------------------+
-            ^
-            |
-+------------------+
-|   EnvioCorreo    |
-+------------------+
-| +enviar(...)     |
-+------------------+
+        // 🚨 Responsabilidad 3: Guardar en archivo
+        try {
+            FileWriter writer = new FileWriter("reporte.txt");
+            writer.write(contenido);
+            writer.close();
+            System.out.println("[OK] Reporte guardado en reporte.txt");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-+---------------------------+
-| ReporteController         |
-+---------------------------+
-| - estrategia              |
-+---------------------------+
-| +setEstrategia(...)       |
-| +enviarReporte(...)       |
-+---------------------------+
-
-+---------------------------+
-| VistaReporte              |
-+---------------------------+
-| +mostrar()                |
-+---------------------------+
-
-+---------+
-|  Main   |
-+---------+
-| +main() |
-+---------+
+        // 🚨 Responsabilidad 4: Enviar por correo (simulado)
+        System.out.println("\n===== Envío por CORREO (simulado) =====");
+        System.out.println("De: sistema@reportes.com");
+        System.out.println("Para: usuario@correo.com");
+        System.out.println("Asunto: Reporte generado");
+        System.out.println("Contenido:\n" + contenido);
+        System.out.println(">>> Correo enviado correctamente. <<<");
+    }
+}
 ```
 
 ---
 
-## ▶️ Ejecución
+## 🔎 Análisis de la violación
 
-1. Compilar los archivos:
+La clase `Reporte` tiene **múltiples responsabilidades**:
 
-   ```bash
-   javac src/**/*.java src/*.java
-   ```
+1. **Obtener datos** (texto hardcodeado).
+2. **Generar contenido** (formato del reporte).
+3. **Guardar en archivo** (persistencia en disco con `FileWriter`).
+4. **Enviar reporte** (simulación de correo).
 
-2. Ejecutar el programa:
+### ➡️ Problema
 
-   ```bash
-   java -cp src Main
-   ```
+Cada una de estas responsabilidades es un **motivo de cambio distinto**:
 
----
+* Si cambian los datos de entrada (de lista fija a BD o API).
+* Si cambia el formato de salida (texto a JSON/HTML).
+* Si cambia el mecanismo de almacenamiento (archivo → nube).
+* Si cambia el medio de entrega (correo → WhatsApp/Notificación).
 
-## 📌 Ejemplo de salida
-
-```
-[OK] Reporte guardado en reporte.txt
-
-===== Envío por CORREO (simulado) =====
-De: sistema@cotizador.com
-Para: usuario@correo.com
-Asunto: Reporte generado
-Adjunto: reporte.txt
->>> Correo enviado correctamente. <<<
-```
+👉 Esto rompe el SRP porque cualquier cambio obliga a modificar la misma clase, aumentando el acoplamiento y dificultando la mantenibilidad.
 
 ---
 
-## 🚀 Extensión futura
+## ✅ Conclusión
 
-Para agregar nuevos métodos de envío (WhatsApp, Notificación, etc.), basta con crear otra clase que implemente `IMetodoEnvioStrategy`.
-De este modo, el sistema cumple el **Principio Abierto/Cerrado (OCP)**: abierto a la extensión, cerrado a la modificación.
+Este ejemplo sirve para **ilustrar cómo NO diseñar una clase**. La solución correcta consiste en separar las responsabilidades en diferentes clases:
+
+* `GeneradorContenido` → generación de formato.
+* `EntregaArchivo` → guardar el archivo.
+* `EnvioCorreo` (Strategy) → envío del reporte.
+* `Reporte` → solo almacenar datos.
+* `ReporteController` → coordinar estrategias.
+
+De esta manera, cada clase tiene una sola razón de cambio y se cumple el principio SRP de SOLID.
+
