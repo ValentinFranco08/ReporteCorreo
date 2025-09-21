@@ -1,2 +1,0 @@
-===== REPORTE =====
-Este es un reporte con datos importantes para el sistema.

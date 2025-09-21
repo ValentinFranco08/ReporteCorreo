@@ -1,20 +1,30 @@
 package controller;
 
-import models.Reporte;
-import models.IMetodoEnvioStrategy;
+import model.Reporte;
+import model.IEnvioStrategy;
 
 public class ReporteController {
-    private IMetodoEnvioStrategy estrategia;
+    private static ReporteController instance;
+    private IEnvioStrategy estrategia;
 
-    public void setEstrategia(IMetodoEnvioStrategy estrategia) {
+    private ReporteController() {}
+
+    public static ReporteController getInstance() {
+        if (instance == null) {
+            instance = new ReporteController();
+        }
+        return instance;
+    }
+
+    public void setEstrategia(IEnvioStrategy estrategia) {
         this.estrategia = estrategia;
     }
 
-    public void enviarReporte(Reporte reporte, String destinatario) {
+    public void enviarReporte(Reporte reporte) {
         if (estrategia != null) {
-            estrategia.enviar(reporte, destinatario);
+            estrategia.enviar(reporte);
         } else {
-            System.out.println("[ERROR] No se definió una estrategia de envío.");
+            System.out.println("[ERROR] No se definió estrategia de envío.");
         }
     }
 }
